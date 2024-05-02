@@ -11,14 +11,15 @@ class TournamentController:
     @staticmethod
     def get_all_players_sorted():
         """Get a list of all players sorted alphabetically."""
-        players = Player.get_all_players_sorted()
-        sorted_players = sorted(players, key=lambda x: (x.last_name, x.first_name))
+        file_path = "../data/players.json"
+        sorted_players = Player.get_all_players_sorted(file_path)
         return sorted_players
 
     @staticmethod
     def get_all_tournaments():
         """Get a list of all tournaments."""
-        tournaments = Tournament.get_all_tournaments()
+        file_path = "../data/tournaments.json"
+        tournaments = Tournament.get_all_tournaments(file_path)
         return tournaments
 
     @staticmethod

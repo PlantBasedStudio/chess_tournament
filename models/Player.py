@@ -68,16 +68,9 @@ class Player:
             player_data = json.load(json_file)
         return [cls(**data) for data in player_data]
 
-    @classmethod
-    def get_all_players_sorted(cls, file_path):
-        """
-        Get a list of all players sorted alphabetically.
-
-        Args:
-            file_path (str): The path to the JSON file containing player data.
-
-        Returns:
-            list: A list of Player instances sorted alphabetically.
-        """
-        all_players = cls.load_from_json(file_path)
-        return sorted(all_players, key=lambda player: (player.last_name, player.first_name))
+    @staticmethod
+    def get_all_players_sorted(file_path):
+        """Get a list of all players sorted alphabetically."""
+        players = Player.load_from_json(file_path)
+        sorted_players = sorted(players, key=lambda x: (x.last_name, x.first_name))
+        return sorted_players
