@@ -3,6 +3,7 @@ from controllers.TournamentController import TournamentController
 
 
 def add_player():
+    # controller qui appelle la vue, envoie les données au modèle, renvoi le resultat en vue.
     chess_id = input("Entrez l'identifiant du joueur : ")
     last_name = input("Entrez le nom du joueur : ")
     first_name = input("Entrez le prénom du joueur : ")

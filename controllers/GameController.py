@@ -2,10 +2,15 @@ from models.Player import Player
 from models.Tournament import Tournament
 from models.Round import Round
 from models.Match import Match
+from views import menu
 
 
 class GameController:
     """Controller class for managing interactions between models and views."""
+
+    @staticmethod
+    def run():
+        menu.main_menu()
 
     @staticmethod
     def create_player(chess_id, last_name, first_name, date_of_birth, elo):
