@@ -1,5 +1,4 @@
-from views import menu
-from controllers import GameController
+from controllers.GameController import GameController
 
 if __name__ == "__main__":
     GameController.run()

@@ -1,4 +1,5 @@
 import json
+import os
 
 
 class Player:
@@ -20,6 +21,7 @@ class Player:
         self.first_name = first_name
         self.date_of_birth = date_of_birth
         self.elo = elo
+        self.points = 0
 
     @classmethod
     def create_player(cls, chess_id, last_name, first_name, date_of_birth, elo):
@@ -37,6 +39,57 @@ class Player:
             Player: A new Player instance.
         """
         return cls(chess_id, last_name, first_name, date_of_birth, elo)
+
+    @staticmethod
+    def get_player_by_id(chess_id):
+        """Get a player by their ID."""
+        # Load all players from the JSON file
+        data_dir = './data'
+        players_file = 'players.json'
+        file_path = os.path.join(data_dir, players_file)
+        players = Player.load_from_json(file_path)
+
+        # Search for the player by ID
+        for player in players:
+            if player.chess_id == chess_id:
+                return player
+
+        # Return None if player not found
+        return None
+    @classmethod
+    def save_to_json(cls, player):
+        """
+        Save player data to a JSON file.
+
+        Args:
+            player (Player): The player instance to save.
+
+        Raises:
+            FileNotFoundError: If the data directory or players.json file does not exist.
+        """
+        data_dir = './data'
+        players_file = 'players.json'
+        file_path = os.path.join(data_dir, players_file)
+
+        # Create the data directory if it doesn't exist
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+
+        # Check if the players.json file exists
+        if not os.path.exists(file_path):
+            # Create an empty players list if the file doesn't exist
+            players_data = []
+        else:
+            # Load existing player data from the JSON file
+            with open(file_path, 'r') as json_file:
+                players_data = json.load(json_file)
+
+        # Append the new player data to the list
+        players_data.append(player.to_json())
+
+        # Save the updated player data back to the JSON file
+        with open(file_path, 'w') as json_file:
+            json.dump(players_data, json_file, indent=4)
 
     def to_json(self):
         """

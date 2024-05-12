@@ -1,4 +1,5 @@
 import json
+import os
 from models.Match import Match
 from models.Player import Player
 from models.Round import Round
@@ -59,6 +60,11 @@ class Tournament:
         Args:
             file_path (str): The path to the JSON file.
         """
+        data_dir = './data'
+        # Créez le dossier data/tournaments s'il n'existe pas
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+
         tournament_data = {
             "name": self.name,
             "location": self.location,
@@ -70,35 +76,55 @@ class Tournament:
             "registered_players": [player.__dict__ for player in self.registered_players],
             "rounds": [[match.__dict__ for match in round_matches] for round_matches in self.rounds]
         }
-        with open(file_path, 'w') as json_file:
-            json.dump(tournament_data, json_file, indent=4)
 
-    @classmethod
-    def load_from_json(cls, file_path):
+        # Load existing tournament data from the JSON file
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as json_file:
+                all_tournaments = json.load(json_file)
+        else:
+            all_tournaments = []
+
+        # Append the new tournament data to the list
+        all_tournaments.append(tournament_data)
+
+        # Save the updated tournament data back to the JSON file
+        with open(file_path, 'w') as json_file:
+            json.dump(all_tournaments, json_file, indent=4)
+
+    @staticmethod
+    def load_tournament(tournament_name, file_path):
         """
         Load tournament data from a JSON file.
 
         Args:
+            tournament_name (str): The name of the tournament.
             file_path (str): The path to the JSON file.
 
         Returns:
             Tournament: A Tournament instance loaded from the JSON data.
         """
-        with open(file_path, 'r') as json_file:
-            tournament_data = json.load(json_file)
-        tournament = cls(
-            tournament_data['name'],
-            tournament_data['location'],
-            tournament_data['start_date'],
-            tournament_data['end_date'],
-            tournament_data['num_rounds'],
-            tournament_data['current_round'],
-            tournament_data['description']
-        )
-        tournament.registered_players = [Player(**player_data) for player_data in tournament_data['registered_players']]
-        tournament.rounds = [[Match(**match_data) for match_data in round_matches]
-                             for round_matches in tournament_data['rounds']]
-        return tournament
+        try:
+            with open(file_path, 'r') as json_file:
+                all_tournaments_data = json.load(json_file)
+        except FileNotFoundError:
+            return None
+
+        for tournament_data in all_tournaments_data:
+            if tournament_data['name'] == tournament_name:
+                tournament = Tournament(
+                    tournament_data['name'],
+                    tournament_data['location'],
+                    tournament_data['start_date'],
+                    tournament_data['end_date'],
+                    tournament_data['num_rounds'],
+                    tournament_data['current_round'],
+                    tournament_data['description']
+                )
+                tournament.registered_players = tournament_data['registered_players']
+                tournament.rounds = tournament_data['rounds']
+                return tournament
+
+        return None
 
     @classmethod
     def get_all_tournaments(cls, file_path):
@@ -111,25 +137,65 @@ class Tournament:
         Returns:
             list: A list of Tournament instances.
         """
-        all_tournaments = cls.load_from_json(file_path)
+        try:
+            with open(file_path, 'r') as json_file:
+                all_tournaments_data = json.load(json_file)
+        except FileNotFoundError:
+            return []
+
+        all_tournaments = []
+        for tournament_data in all_tournaments_data:
+            tournament = cls(
+                tournament_data['name'],
+                tournament_data['location'],
+                tournament_data['start_date'],
+                tournament_data['end_date'],
+                tournament_data['num_rounds'],
+                tournament_data['current_round'],
+                tournament_data['description']
+            )
+            tournament.registered_players = [Player(**player_data) for player_data in
+                                             tournament_data['registered_players']]
+            tournament.rounds = [[Match(**match_data) for match_data in round_matches] for round_matches in
+                                 tournament_data['rounds']]
+            all_tournaments.append(tournament)
         return all_tournaments
 
-    def get_tournament_details(self):
-        """Get the name and dates of the tournament."""
-        return f"Tournament: {self.name}\nStart Date: {self.start_date}\nEnd Date: {self.end_date}"
+    @staticmethod
+    def get_tournament_details(tournament_name, file_path):
+        """Get the name and dates of a specific tournament."""
+        tournaments = Tournament.get_all_tournaments(file_path)
+        for tournament in tournaments:
+            if tournament.name == tournament_name:
+                return (f"Tournament: {tournament.name}\nStart Date: {tournament.start_date}\nEnd Date:"
+                        f" {tournament.end_date}")
+        return None
 
-    def get_players_in_tournament_sorted(self):
-        """Get a list of players in the tournament sorted alphabetically."""
-        return sorted(self.registered_players, key=lambda player: (player.last_name, player.first_name))
+    @staticmethod
+    def get_players_in_tournament_sorted(tournament_name):
+        """Get a list of players in a tournament, sorted alphabetically."""
+        from models.Tournament import Tournament  # Importing here to avoid circular import
+        tournament = Tournament.get_tournament_details(tournament_name)
+        if tournament:
+            players = tournament.players
+            sorted_players = sorted(players, key=lambda x: (x.last_name, x.first_name))
+            return sorted_players
+        else:
+            return "Tournoi non trouvé."
 
-    def get_all_rounds_and_matches(self):
-        """Get a list of all rounds and matches in the tournament."""
-        all_rounds_matches = []
-        for round_ in self.rounds:
-            round_info = {'round_name': round_, 'matches': []}
-            for match in round_:
-                match_info = {'player1': match.player1, 'player2': match.player2, 'score1': match.score1,
-                              'score2': match.score2}
-                round_info['matches'].append(match_info)
-            all_rounds_matches.append(round_info)
-        return all_rounds_matches
+    @staticmethod
+    def get_tournament_rounds_and_matches(tournament_name):
+        """Get a list of all rounds and matches in a tournament."""
+        from models.Tournament import Tournament  # Importing here to avoid circular import
+        tournament = Tournament.get_tournament_details(tournament_name)
+        if tournament:
+            rounds_and_matches = []
+            for _round in tournament.rounds:
+                round_info = f"Round: {_round.name}\n"
+                matches_info = ""
+                for match in _round.matches:
+                    matches_info += f"{match}\n"
+                rounds_and_matches.append(round_info + matches_info)
+            return rounds_and_matches
+        else:
+            return "Tournoi non trouvé"
