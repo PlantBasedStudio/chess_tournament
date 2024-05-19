@@ -56,6 +56,7 @@ class Player:
 
         # Return None if player not found
         return None
+
     @classmethod
     def save_to_json(cls, player):
         """

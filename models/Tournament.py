@@ -167,15 +167,13 @@ class Tournament:
         tournaments = Tournament.get_all_tournaments(file_path)
         for tournament in tournaments:
             if tournament.name == tournament_name:
-                return (f"Tournament: {tournament.name}\nStart Date: {tournament.start_date}\nEnd Date:"
-                        f" {tournament.end_date}")
+                return tournament
         return None
 
     @staticmethod
     def get_players_in_tournament_sorted(tournament_name):
         """Get a list of players in a tournament, sorted alphabetically."""
-        from models.Tournament import Tournament  # Importing here to avoid circular import
-        tournament = Tournament.get_tournament_details(tournament_name)
+        tournament = Tournament.get_tournament_details(tournament_name, "../data/tournaments.json")
         if tournament:
             players = tournament.players
             sorted_players = sorted(players, key=lambda x: (x.last_name, x.first_name))
@@ -186,8 +184,7 @@ class Tournament:
     @staticmethod
     def get_tournament_rounds_and_matches(tournament_name):
         """Get a list of all rounds and matches in a tournament."""
-        from models.Tournament import Tournament  # Importing here to avoid circular import
-        tournament = Tournament.get_tournament_details(tournament_name)
+        tournament = Tournament.get_tournament_details(tournament_name, "../data/tournaments.json")
         if tournament:
             rounds_and_matches = []
             for _round in tournament.rounds:

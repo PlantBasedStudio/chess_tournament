@@ -1,4 +1,4 @@
-from controllers.GameController import GameController
+from controllers.MainController import MainController
 
 if __name__ == "__main__":
-    GameController.run()
+    MainController.run()
