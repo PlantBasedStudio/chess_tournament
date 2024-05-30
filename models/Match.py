@@ -1,7 +1,7 @@
 class Match:
     """Represents a match between two players."""
 
-    def __init__(self, player1, player2):
+    def __init__(self, player1, player2, winner=None):
         """
         Initialize a match.
 
@@ -11,6 +11,7 @@ class Match:
         """
         self.players = [player1, player2]
         self.scores = [0, 0]  # Scores initialized to 0 for both players
+        self.winner = winner
 
     def set_score(self, player_index, score):
         """

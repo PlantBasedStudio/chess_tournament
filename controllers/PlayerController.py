@@ -38,3 +38,7 @@ class PlayerController:
                     f"{player.first_name} {player.last_name} (ID: {player.chess_id}, ELO: {player.elo})")
         else:
             MenuView.display_message("Aucun joueur trouvé.")
+
+    @staticmethod
+    def find_or_create_player(player_id):
+        return Player.get_player_by_id(player_id)

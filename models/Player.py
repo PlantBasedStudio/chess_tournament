@@ -5,7 +5,7 @@ import os
 class Player:
     """Represents a chess player."""
 
-    def __init__(self, chess_id, last_name, first_name, date_of_birth, elo):
+    def __init__(self, chess_id, last_name, first_name, date_of_birth, elo, points=0):
         """
         Initialize a player.
 
@@ -15,6 +15,7 @@ class Player:
             first_name (str): The first name of the player.
             date_of_birth (str): The date of birth of the player in the format 'YYYY-MM-DD'.
             elo (int): elo of the player.
+            points : points of the player.
         """
         self.chess_id = chess_id
         self.last_name = last_name
@@ -52,7 +53,8 @@ class Player:
         # Search for the player by ID
         for player in players:
             if player.chess_id == chess_id:
-                return player
+                print("informations joueurs" , player.to_json())
+                return player.to_json()
 
         # Return None if player not found
         return None
@@ -128,3 +130,11 @@ class Player:
         players = Player.load_from_json(file_path)
         sorted_players = sorted(players, key=lambda x: (x.last_name, x.first_name))
         return sorted_players
+
+    def add_points(self, points):
+        """Add points to the player's total."""
+        self.points += points
+
+    def get_points(self):
+        """Get the player's current points."""
+        return self.points

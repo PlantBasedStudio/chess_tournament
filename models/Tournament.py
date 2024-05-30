@@ -8,7 +8,7 @@ from models.Round import Round
 class Tournament:
     """Represents a chess tournament."""
 
-    def __init__(self, name, location, start_date, end_date, num_rounds=4, current_round=1, description=""):
+    def __init__(self, name, location, start_date, end_date, num_rounds=4, current_round=1, description="", winner=None):
         """
         Initialize a tournament.
 
@@ -30,6 +30,13 @@ class Tournament:
         self.description = description
         self.rounds = [[] for _ in range(num_rounds)]
         self.registered_players = []
+        self.winner = None
+
+    def add_round_results(self, round_index, round_results):
+        self.rounds[round_index] = round_results
+
+    def get_current_round_index(self):
+        return self.current_round - 1
 
     def generate_rounds(self, players):
         """Generate rounds with matches based on player standings."""
@@ -73,10 +80,30 @@ class Tournament:
             "num_rounds": self.num_rounds,
             "current_round": self.current_round,
             "description": self.description,
-            "registered_players": [player.__dict__ for player in self.registered_players],
-            "rounds": [[match.__dict__ for match in round_matches] for round_matches in self.rounds]
+            "registered_players": [{
+                'chess_id': player['chess_id'],
+                'last_name': player['last_name'],
+                'first_name': player['first_name'],
+                'date_of_birth': player['date_of_birth'],
+                'elo': player['elo'],
+                'points': player.get('points', 0)
+            } for player in self.registered_players],
+            "winner": {
+                'chess_id': self.winner['chess_id'],
+                'last_name': self.winner['last_name'],
+                'first_name': self.winner['first_name'],
+                'date_of_birth': self.winner['date_of_birth'],
+                'elo': self.winner['elo'],
+                'points': self.winner.get('points', 0)
+            } if self.winner else None,
+            "rounds": [[{
+                "player1": match["player1"],
+                "player2": match["player2"],
+                "winner": match.get("winner")
+            } for match in round_matches] for round_matches in self.rounds]
         }
 
+        print("Données du tournoi :", tournament_data)
         # Load existing tournament data from the JSON file
         if os.path.exists(file_path):
             with open(file_path, 'r') as json_file:
@@ -84,8 +111,16 @@ class Tournament:
         else:
             all_tournaments = []
 
-        # Append the new tournament data to the list
-        all_tournaments.append(tournament_data)
+        # Find and replace the tournament if it exists, otherwise append
+        tournament_exists = False
+        for i, existing_tournament in enumerate(all_tournaments):
+            if existing_tournament['name'] == self.name:
+                all_tournaments[i] = tournament_data
+                tournament_exists = True
+                break
+
+        if not tournament_exists:
+            all_tournaments.append(tournament_data)
 
         # Save the updated tournament data back to the JSON file
         with open(file_path, 'w') as json_file:
@@ -118,7 +153,8 @@ class Tournament:
                     tournament_data['end_date'],
                     tournament_data['num_rounds'],
                     tournament_data['current_round'],
-                    tournament_data['description']
+                    tournament_data['description'],
+                    tournament_data['winner']
                 )
                 tournament.registered_players = tournament_data['registered_players']
                 tournament.rounds = tournament_data['rounds']
@@ -152,7 +188,8 @@ class Tournament:
                 tournament_data['end_date'],
                 tournament_data['num_rounds'],
                 tournament_data['current_round'],
-                tournament_data['description']
+                tournament_data['description'],
+                tournament_data['winner']
             )
             tournament.registered_players = [Player(**player_data) for player_data in
                                              tournament_data['registered_players']]
