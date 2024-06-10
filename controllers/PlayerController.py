@@ -13,7 +13,6 @@ class PlayerController:
 
         if existing_player:
             MenuView.display_message("Le joueur existe déjà !")
-            player = existing_player
         else:
             last_name = MenuView.get_user_input("Entrez le nom du joueur : ")
             first_name = MenuView.get_user_input("Entrez le prénom du joueur : ")

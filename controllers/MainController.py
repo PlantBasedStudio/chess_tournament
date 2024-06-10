@@ -53,6 +53,10 @@ class MainController:
             elif choice == "4":
                 GameController.play_tournament()
             elif choice == "5":
+                tournament_name = MenuView.get_user_input("Entrez le nom du tournoi : ")
+                TournamentController.display_players_sorted(tournament_name)
+            elif choice == "6":
+                MenuView.display_message("Retour au menu")
                 break
             else:
                 MenuView.display_message("Option invalide. Veuillez choisir une option valide.")

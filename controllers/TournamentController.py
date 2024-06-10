@@ -14,7 +14,8 @@ class TournamentController:
         location = MenuView.get_user_input("Entrez le lieu du tournoi : ")
         start_date = MenuView.get_user_input("Entrez la date de début du tournoi (YYYY-MM-DD) : ")
         end_date = MenuView.get_user_input("Entrez la date de fin du tournoi (YYYY-MM-DD) : ")
-        num_rounds = int(MenuView.get_user_input("Entrez le nombre de rounds du tournoi : "))
+        num_rounds_input = MenuView.get_user_input("Entrez le nombre de rounds du tournoi (par défaut 4) : ")
+        num_rounds = int(num_rounds_input) if num_rounds_input else 4
         tournament = Tournament(name, location, start_date, end_date, num_rounds, description="")
         TournamentController.save_tournament(tournament)
         if tournament:
@@ -83,10 +84,14 @@ class TournamentController:
             MenuView.display_message("Inscrivez-vous au tournoi :")
             while len(tournament.registered_players) < num_players:
                 player_id = MenuView.get_user_input("Entrez l'identifiant du joueur : ")
+                if player_id == "exit":
+                    TournamentController.save_tournament(tournament)
+                    exit()
                 player = PlayerController.find_or_create_player(player_id)
                 if player:
                     if player not in tournament.registered_players:
                         tournament.registered_players.append(player)
+
                         print("Joueur ajouté, liste:", tournament.registered_players)
                         print('plus que', num_players - len(tournament.registered_players), 'joueurs à inscrire')
                     else:
@@ -97,33 +102,34 @@ class TournamentController:
 
     @staticmethod
     def play_rounds(tournament):
-        tournament_winners = []  # Liste pour stocker les gagnants de chaque tour
+        tournament_winners = []
         while tournament.current_round <= tournament.num_rounds:
             round_name = f"Round {tournament.current_round}"
             current_round = Round(round_name)
             current_round.start()
+            TournamentController.save_tournament(tournament)
 
             MenuView.display_message(f"Tournoi en cours : {tournament.name}, {current_round.name}")
             matches = Round.generate_matches(tournament.registered_players)
             TournamentController.record_match_results(tournament, current_round, matches)
             winners = TournamentController.determine_winners(matches)
-            tournament_winners.append(winners)  # Ajouter les gagnants de ce tour à la liste
+            tournament_winners.append(winners)
             tournament.current_round += 1
 
-        # Déterminer le gagnant final du tournoi
         final_winner = TournamentController.determine_tournament_winner(tournament_winners)
         tournament.winner = final_winner
+        TournamentController.save_tournament(tournament)
+
         MenuView.display_message(
             f"Gagnant final du tournoi {tournament.name}: {final_winner['first_name']} {final_winner['last_name']}")
 
     @staticmethod
     def determine_tournament_winner(tournament_winners):
         final_winner = None
-        max_points = float('-inf')  # Initialisation avec une valeur très basse
+        max_points = float('-inf')
 
         for winners in tournament_winners:
             for winner in winners:
-                # Vérifier si le dictionnaire contient la clé 'points'
                 if 'points' in winner:
                     points = winner['points']
                     if points > max_points:
@@ -139,10 +145,13 @@ class TournamentController:
         for match in matches:
             player1, player2 = match.get_players()
             result = MenuView.get_user_input(
-                f"Entrez le résultat du match entre {player1['first_name']} {player1['last_name']} "
-                f"et {player2['first_name']} {player2['last_name']} (0 pour match nul, 1 pour victoire "
+                f"Entrez le résultat du match entre {player1.get('first_name')} {player1.get('last_name')} "
+                f"et {player2.get('first_name')} {player2.get('last_name')} (0 pour match nul, 1 pour victoire "
                 f"du premier joueur, 2 pour victoire du second joueur) : "
             )
+            if result == "exit":
+                TournamentController.save_tournament(tournament)
+                exit()
             if result in ['0', '1', '2']:
                 match.set_score(0, int(result))  # Met à jour le score du premier joueur
                 match.set_score(1, int(not int(result)))  # Met à jour le score du second joueur
@@ -156,14 +165,12 @@ class TournamentController:
                 current_round.add_matches(matches)
             else:
                 MenuView.display_message("Veuillez entrer un résultat valide.")
-        tournament.add_round_results(current_round_index, round_results)  # Ajouter les résultats du tour au tournoi
+        tournament.add_round_results(current_round_index, round_results)
 
     @staticmethod
     def update_points(match, result):
         player1, player2 = match.get_players()
 
-        # Vérifiez si les points sont déjà présents dans les dictionnaires,
-        # sinon initialisez-les à zéro
         player1_points = player1.get('points', 0)
         player2_points = player2.get('points', 0)
 
@@ -198,6 +205,27 @@ class TournamentController:
         return Tournament.get_all_tournaments(file_path)
 
     @staticmethod
+    def display_players_sorted(tournament_name):
+        """Get all players sorted of a specific tournament."""
+        file_path = "./data/tournaments.json"
+        tournaments = Tournament.get_all_tournaments(file_path)
+        for tournament in tournaments:
+            if tournament.name == tournament_name:
+                sorted_players = sorted(tournament.registered_players, key=lambda x: (x.last_name, x.first_name))
+                tournament_players = ""
+                for player in sorted_players:
+                    first_name = player.first_name if hasattr(player, 'first_name') else 'Unknown'
+                    last_name = player.last_name if hasattr(player, 'last_name') else 'Unknown'
+                    chess_id = player.chess_id if hasattr(player, 'chess_id') else 'Unknown'
+                    tournament_players += f"  - {first_name} {last_name} ({chess_id}),\n"
+                if tournament_players:
+                    MenuView.display_message(tournament_players)
+                else:
+                    MenuView.display_message("Aucun joueurs inscrits à ce tournoi")
+            else:
+                MenuView.display_message("Tournoi non trouvé")
+
+    @staticmethod
     def get_tournament_details(tournament_name):
         """Get the name and dates of a specific tournament."""
         file_path = "./data/tournaments.json"
@@ -209,7 +237,10 @@ class TournamentController:
 
                 tournament_info = (f"Tournament: {tournament.name}\nStart Date: {tournament.start_date}\nEnd Date:"
                                    f" {tournament.end_date}\nRegistered Players:\n")
-                for player in tournament.registered_players:
+                # Sort players alphabetically
+                sorted_players = sorted(tournament.registered_players, key=lambda x: (x.last_name, x.first_name))
+
+                for player in sorted_players:
                     first_name = player.first_name if hasattr(player, 'first_name') else 'Unknown'
                     last_name = player.last_name if hasattr(player, 'last_name') else 'Unknown'
                     chess_id = player.chess_id if hasattr(player, 'chess_id') else 'Unknown'
@@ -217,9 +248,9 @@ class TournamentController:
 
                 # Check if there is a winner
                 if tournament.winner:
-                    tournament_info += f"Tournament Winner: {tournament.winner.get('first_name', 'Unknown')} " \
-                                       f"{tournament.winner.get('last_name', 'Unknown')} " \
-                                       f"({tournament.winner.get('chess_id', 'Unknown')})"
+                    tournament_info += f"Tournament Winner: {tournament.winner.first_name} " \
+                                       f"{tournament.winner.last_name} " \
+                                       f"({tournament.winner.chess_id})"
                 else:
                     tournament_info += "Tournament Winner: None"
 

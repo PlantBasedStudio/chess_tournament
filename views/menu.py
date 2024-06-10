@@ -25,7 +25,8 @@ class MenuView:
         print("2. Afficher la liste des tournois")
         print("3. Afficher les détails d'un tournoi spécifique")
         print("4. Jouer un tournoi")
-        print("5. Retourner au menu principal")
+        print("5. Afficher la liste des joueurs du tournoi par ordre alphabétique")
+        print("6. Retourner au menu principal")
 
     @staticmethod
     def display_message(message):

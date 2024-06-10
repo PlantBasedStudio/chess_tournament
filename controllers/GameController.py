@@ -11,20 +11,21 @@ class GameController:
 
     @staticmethod
     def play_tournament():
+        # Charger les données au début
         tournament_name = MenuView.get_user_input("Entrez le nom du tournoi : ")
         tournament = TournamentController.find_or_create_tournament(tournament_name)
+        print("tournoi chargé :", TournamentController.load_tournament(tournament_name))
 
         if tournament:
             TournamentController.register_players(tournament)
             TournamentController.play_rounds(tournament)
             TournamentController.save_tournament(tournament)
             print(
-                f"Tournoi '{tournament.name}' sauvegardé avec {len(tournament.registered_players)} joueurs enregistrés.")
+                f"Tournoi '{tournament.name}' "
+                f"sauvegardé avec {len(tournament.registered_players)} joueurs enregistrés.")
             MenuView.display_message("Le tournoi est terminé !")
         else:
             MenuView.display_message("Le tournoi spécifié n'a pas été trouvé.")
-
-
 
     @staticmethod
     def generate_matches(players):
@@ -54,7 +55,3 @@ class GameController:
             GameController.previous_matches.add(match)
 
         return matches
-
-
-
-

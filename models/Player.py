@@ -17,12 +17,13 @@ class Player:
             elo (int): elo of the player.
             points : points of the player.
         """
+
         self.chess_id = chess_id
         self.last_name = last_name
         self.first_name = first_name
         self.date_of_birth = date_of_birth
         self.elo = elo
-        self.points = 0
+        self.points = points
 
     @classmethod
     def create_player(cls, chess_id, last_name, first_name, date_of_birth, elo):
@@ -53,11 +54,22 @@ class Player:
         # Search for the player by ID
         for player in players:
             if player.chess_id == chess_id:
-                print("informations joueurs" , player.to_json())
+                print("informations joueurs", player.to_json())
                 return player.to_json()
 
         # Return None if player not found
         return None
+
+    @staticmethod
+    def from_json(data):
+        return Player(
+            data.get('chess_id', ''),
+            data.get('last_name', ''),
+            data.get('first_name', ''),
+            data.get('date_of_birth', ''),
+            data.get('elo', 0),
+            data.get('points', 0)
+        )
 
     @classmethod
     def save_to_json(cls, player):
@@ -102,11 +114,12 @@ class Player:
             dict: A dictionary representation of the player object.
         """
         return {
-            "chess_id": self.chess_id,
-            "last_name": self.last_name,
-            "first_name": self.first_name,
-            "date_of_birth": self.date_of_birth,
-            "elo": self.elo
+            'chess_id': self.chess_id,
+            'last_name': self.last_name,
+            'first_name': self.first_name,
+            'date_of_birth': self.date_of_birth,
+            'elo': self.elo,
+            'points': self.points
         }
 
     @classmethod

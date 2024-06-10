@@ -1,6 +1,5 @@
 import json
 import os
-from models.Match import Match
 from models.Player import Player
 from models.Round import Round
 
@@ -8,7 +7,8 @@ from models.Round import Round
 class Tournament:
     """Represents a chess tournament."""
 
-    def __init__(self, name, location, start_date, end_date, num_rounds=4, current_round=1, description="", winner=None):
+    def __init__(self, name, location, start_date, end_date, num_rounds=4, current_round=1,
+                 description="", winner=None):
         """
         Initialize a tournament.
 
@@ -30,7 +30,7 @@ class Tournament:
         self.description = description
         self.rounds = [[] for _ in range(num_rounds)]
         self.registered_players = []
-        self.winner = None
+        self.winner = winner
 
     def add_round_results(self, round_index, round_results):
         self.rounds[round_index] = round_results
@@ -80,22 +80,9 @@ class Tournament:
             "num_rounds": self.num_rounds,
             "current_round": self.current_round,
             "description": self.description,
-            "registered_players": [{
-                'chess_id': player['chess_id'],
-                'last_name': player['last_name'],
-                'first_name': player['first_name'],
-                'date_of_birth': player['date_of_birth'],
-                'elo': player['elo'],
-                'points': player.get('points', 0)
-            } for player in self.registered_players],
-            "winner": {
-                'chess_id': self.winner['chess_id'],
-                'last_name': self.winner['last_name'],
-                'first_name': self.winner['first_name'],
-                'date_of_birth': self.winner['date_of_birth'],
-                'elo': self.winner['elo'],
-                'points': self.winner.get('points', 0)
-            } if self.winner else None,
+            "registered_players": [player.to_json() if isinstance(player, Player)
+                                   else player for player in self.registered_players],
+            "winner": self.winner.to_json() if self.winner and isinstance(self.winner, Player) else self.winner,
             "rounds": [[{
                 "player1": match["player1"],
                 "player2": match["player2"],
@@ -147,56 +134,60 @@ class Tournament:
         for tournament_data in all_tournaments_data:
             if tournament_data['name'] == tournament_name:
                 tournament = Tournament(
-                    tournament_data['name'],
-                    tournament_data['location'],
-                    tournament_data['start_date'],
-                    tournament_data['end_date'],
-                    tournament_data['num_rounds'],
-                    tournament_data['current_round'],
-                    tournament_data['description'],
-                    tournament_data['winner']
+                    tournament_data.get('name', ''),
+                    tournament_data.get('location', ''),
+                    tournament_data.get('start_date', ''),
+                    tournament_data.get('end_date', ''),
+                    tournament_data.get('num_rounds', 0),
+                    tournament_data.get('current_round', 0),
+                    tournament_data.get('description', ''),
+                    tournament_data.get('winner', None)
                 )
-                tournament.registered_players = tournament_data['registered_players']
-                tournament.rounds = tournament_data['rounds']
+                tournament.registered_players = [Player.from_json(player) if isinstance(player, dict)
+                                                 else player
+                                                 for player in tournament_data.get('registered_players', [])]
+                tournament.rounds = tournament_data.get('rounds', [])
                 return tournament
 
         return None
 
-    @classmethod
-    def get_all_tournaments(cls, file_path):
-        """
-        Get a list of all tournaments.
+    @staticmethod
+    def get_all_tournaments(file_path="./data/tournaments.json"):
+        tournaments = []
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as file:
+                data = json.load(file)
+                tournaments = [Tournament.from_dict(t) for t in data]
+        return tournaments
 
-        Args:
-            file_path (str): The path to the JSON file containing tournament data.
+    @staticmethod
+    def set_all_tournaments(tournaments, file_path="./data/tournaments.json"):
+        data = [tournament.to_dict() for tournament in tournaments]
+        with open(file_path, 'w') as file:
+            json.dump(data, file, indent=4)
 
-        Returns:
-            list: A list of Tournament instances.
-        """
-        try:
-            with open(file_path, 'r') as json_file:
-                all_tournaments_data = json.load(json_file)
-        except FileNotFoundError:
-            return []
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "location": self.location,
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+            "num_rounds": self.num_rounds,
+            "current_round": self.current_round,
+            "registered_players": [player.to_json() for player in self.registered_players],
+            "winner": self.winner.to_json() if self.winner else None
+        }
 
-        all_tournaments = []
-        for tournament_data in all_tournaments_data:
-            tournament = cls(
-                tournament_data['name'],
-                tournament_data['location'],
-                tournament_data['start_date'],
-                tournament_data['end_date'],
-                tournament_data['num_rounds'],
-                tournament_data['current_round'],
-                tournament_data['description'],
-                tournament_data['winner']
-            )
-            tournament.registered_players = [Player(**player_data) for player_data in
-                                             tournament_data['registered_players']]
-            tournament.rounds = [[Match(**match_data) for match_data in round_matches] for round_matches in
-                                 tournament_data['rounds']]
-            all_tournaments.append(tournament)
-        return all_tournaments
+    @staticmethod
+    def from_dict(data):
+        tournament = Tournament(
+            data["name"], data["location"], data["start_date"], data["end_date"],
+            data["num_rounds"], description=""
+        )
+        tournament.current_round = data["current_round"]
+        tournament.registered_players = [Player.from_json(p) for p in data["registered_players"]]
+        tournament.winner = Player.from_json(data["winner"]) if data["winner"] else None
+        return tournament
 
     @staticmethod
     def get_tournament_details(tournament_name, file_path):
@@ -206,30 +197,3 @@ class Tournament:
             if tournament.name == tournament_name:
                 return tournament
         return None
-
-    @staticmethod
-    def get_players_in_tournament_sorted(tournament_name):
-        """Get a list of players in a tournament, sorted alphabetically."""
-        tournament = Tournament.get_tournament_details(tournament_name, "../data/tournaments.json")
-        if tournament:
-            players = tournament.players
-            sorted_players = sorted(players, key=lambda x: (x.last_name, x.first_name))
-            return sorted_players
-        else:
-            return "Tournoi non trouvé."
-
-    @staticmethod
-    def get_tournament_rounds_and_matches(tournament_name):
-        """Get a list of all rounds and matches in a tournament."""
-        tournament = Tournament.get_tournament_details(tournament_name, "../data/tournaments.json")
-        if tournament:
-            rounds_and_matches = []
-            for _round in tournament.rounds:
-                round_info = f"Round: {_round.name}\n"
-                matches_info = ""
-                for match in _round.matches:
-                    matches_info += f"{match}\n"
-                rounds_and_matches.append(round_info + matches_info)
-            return rounds_and_matches
-        else:
-            return "Tournoi non trouvé"
