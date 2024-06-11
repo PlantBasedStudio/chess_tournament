@@ -36,6 +36,14 @@ This project uses flake8 to analyse Python code and generate an HTML report of s
 - pip
 - virtualenv
 
+## How to use the programme
+### 1. Run the main.py script
+### 2. Follow the on-screen commands
+
+You can add or consult the player database, create tournaments, register players and enter scores. You can also generate tournament reports. 
+Players and tournaments are stored as JSON data for the time being, but can be integrated into HTML views or an application interface.
+
+
 ## Steps to configure and run flake8
 
 ### 1. create and activate a virtual environment
@@ -63,12 +71,13 @@ This project uses flake8 to analyse Python code and generate an HTML report of s
 
 With the virtual environment enabled, install flake8 and flake8-html :
 
-    ```bash
+    
     pip install flake8 flake8-html
-    ```
+    
+
 ### 3. run flake8
 
-    ```bash
+    
     python run_flake8.py
-    ```
+    
 
